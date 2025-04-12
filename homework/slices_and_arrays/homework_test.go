@@ -23,8 +23,8 @@ type CircularQueue[T integerable] struct {
 	sync.Mutex
 }
 
-func NewCircularQueue[T integerable](size int) CircularQueue[T] {
-	return CircularQueue[T]{
+func NewCircularQueue[T integerable](size int) *CircularQueue[T] {
+	return &CircularQueue[T]{
 		size:   size,
 		first:  0,
 		last:   0,
