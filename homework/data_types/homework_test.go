@@ -3,34 +3,33 @@ package main
 import (
 	"encoding/binary"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
 
 // go test -v homework_test.go
 
+const maxSize = 8
+
+var bufGlob = make([]byte, maxSize)
+
 type uintegerable interface {
 	uint16 | uint32 | uint64
 }
 
 func ToLittleEndian[T uintegerable](number T) T {
-	switch any(number).(type) {
-	case uint16:
-		return T(uint16(byte(number))<<8 | uint16(byte(number>>8)))
-	case uint32:
-		return T(uint32(byte(number))<<24 | uint32(byte(number>>8))<<16 | uint32(byte(number>>16))<<8 | uint32(byte(number>>24)))
-	case uint64:
-		return T(
-			uint64(byte(number))<<56 |
-				uint64(byte(number>>8))<<48 |
-				uint64(byte(number>>16))<<40 |
-				uint64(byte(number>>24))<<32 |
-				uint64(byte(number>>32))<<24 |
-				uint64(byte(number>>40))<<16 |
-				uint64(byte(number>>48))<<8 |
-				uint64(byte(number>>56)))
+	size := unsafe.Sizeof(number)
+	buf := bufGlob[:size]
+
+	*(*T)(unsafe.Pointer(&buf[0])) = number
+
+	s := int(size)
+	for i := s/2 - 1; i >= 0; i-- {
+		buf[i], buf[s-i-1] = buf[s-i-1], buf[i]
 	}
-	return 0 // need to implement
+
+	return *(*T)(unsafe.Pointer(&buf[0]))
 }
 
 func ToLittleEndianWithStd[T uintegerable](number T) T {
