@@ -77,12 +77,6 @@ func (b *COWBuffer) String() string {
 	return unsafe.String(unsafe.SliceData(b.data), len(b.data))
 }
 
-func finalize(b *COWBuffer) {
-	for b.refs != nil {
-		b.Close()
-	}
-}
-
 func TestCOWBuffer(t *testing.T) {
 	data := []byte{'a', 'b', 'c', 'd'}
 	buffer := NewCOWBuffer(data)
