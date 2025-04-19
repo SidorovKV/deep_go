@@ -32,7 +32,18 @@ func (b *COWBuffer) Clone() COWBuffer {
 }
 
 func (b *COWBuffer) Close() {
-	*b.refs--
+	if b.refs == nil {
+		return
+	}
+
+	if *b.refs > 0 {
+		*b.refs--
+	}
+
+	if *b.refs == 0 {
+		b.data = nil
+		b.refs = nil
+	}
 }
 
 func (b *COWBuffer) Update(index int, value byte) bool {
@@ -64,6 +75,12 @@ func (b *COWBuffer) String() string {
 	}
 
 	return unsafe.String(unsafe.SliceData(b.data), len(b.data))
+}
+
+func finalize(b *COWBuffer) {
+	for b.refs != nil {
+		b.Close()
+	}
 }
 
 func TestCOWBuffer(t *testing.T) {
