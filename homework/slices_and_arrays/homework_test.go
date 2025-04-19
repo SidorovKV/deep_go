@@ -2,7 +2,6 @@ package main
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,40 +14,23 @@ type integerable interface {
 }
 
 type CircularQueue[T integerable] struct {
-	size   int
-	first  int
-	last   int
-	len    int
-	values []T
-	sync.Mutex
+	first    int
+	last     int
+	occupied int
+	values   []T
 }
 
 func NewCircularQueue[T integerable](size int) *CircularQueue[T] {
 	return &CircularQueue[T]{
-		size:   size,
-		first:  0,
-		last:   0,
-		len:    0,
 		values: make([]T, size),
-		Mutex:  sync.Mutex{},
 	}
 }
 
 func (q *CircularQueue[T]) Push(value T) bool {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == 0 {
+	if !q.Full() {
 		q.values[q.last] = value
-		q.len++
-
-		return true
-	}
-
-	if q.len != q.size {
-		q.last = q.nextPos(q.last)
-		q.values[q.last] = value
-		q.len++
+		q.last = (q.last + 1) % cap(q.values)
+		q.occupied++
 
 		return true
 	}
@@ -57,24 +39,18 @@ func (q *CircularQueue[T]) Push(value T) bool {
 }
 
 func (q *CircularQueue[T]) Pop() bool {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == 0 {
+	if q.Empty() {
 		return false
 	}
 
-	q.first = q.nextPos(q.first)
-	q.len--
+	q.first = (q.first + 1) % cap(q.values)
+	q.occupied--
 
 	return true
 }
 
 func (q *CircularQueue[T]) Front() T {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == 0 {
+	if q.Empty() {
 		return -1
 	}
 
@@ -82,21 +58,15 @@ func (q *CircularQueue[T]) Front() T {
 }
 
 func (q *CircularQueue[T]) Back() T {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == 0 {
+	if q.Empty() {
 		return -1
 	}
 
-	return q.values[q.last]
+	return q.values[(q.last+cap(q.values)-1)%cap(q.values)]
 }
 
 func (q *CircularQueue[T]) Empty() bool {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == 0 {
+	if q.occupied == 0 {
 		return true
 	}
 
@@ -104,22 +74,11 @@ func (q *CircularQueue[T]) Empty() bool {
 }
 
 func (q *CircularQueue[T]) Full() bool {
-	q.Lock()
-	defer q.Unlock()
-
-	if q.len == q.size {
+	if q.occupied == cap(q.values) {
 		return true
 	}
 
 	return false
-}
-
-func (q *CircularQueue[T]) nextPos(pointer int) int {
-	if pointer+1 >= q.size {
-		return 0
-	}
-
-	return pointer + 1
 }
 
 func TestCircularQueue(t *testing.T) {
