@@ -12,6 +12,7 @@ import (
 
 type OrderedMap[K cmp.Ordered, V any] struct {
 	head *node[K, V]
+	len  int
 }
 
 func NewOrderedMap[K cmp.Ordered, V any]() OrderedMap[K, V] {
@@ -19,6 +20,8 @@ func NewOrderedMap[K cmp.Ordered, V any]() OrderedMap[K, V] {
 }
 
 func (m *OrderedMap[K, V]) Insert(key K, value V) {
+	m.len++
+
 	if m.head == nil {
 		m.head = &node[K, V]{
 			key:   key,
@@ -28,23 +31,135 @@ func (m *OrderedMap[K, V]) Insert(key K, value V) {
 		return
 	}
 
-	m.head.insert(key, value)
+	next := m.head
+
+	for {
+		if key == next.key {
+			next.value = value
+
+			return
+		}
+
+		child := &next.left
+		if key > next.key {
+			child = &next.right
+		}
+
+		if *child == nil {
+			*child = &node[K, V]{key: key, value: value}
+
+			return
+		}
+
+		next = *child
+	}
 }
 
 func (m *OrderedMap[K, V]) Erase(key K) {
-	remove(m.head, key)
+	m.len--
+
+	var parent *node[K, V]
+	current := m.head
+	isLeftChild := false
+
+	for current != nil && current.key != key {
+		parent = current
+		if key < current.key {
+			current = current.left
+			isLeftChild = true
+		} else {
+			current = current.right
+			isLeftChild = false
+		}
+	}
+
+	if current == nil {
+		return
+	}
+
+	if current.left == nil || current.right == nil {
+		var child *node[K, V]
+		if current.left != nil {
+			child = current.left
+		} else {
+			child = current.right
+		}
+
+		if parent == nil {
+			m.head = nil
+
+			return
+		}
+
+		if isLeftChild {
+			parent.left = child
+		} else {
+			parent.right = child
+		}
+
+		return
+	}
+
+	successorParent := current
+	successor := current.right
+
+	for successor.left != nil {
+		successorParent = successor
+		successor = successor.left
+	}
+
+	current.key = successor.key
+	current.value = successor.value
+
+	if successorParent == current {
+		successorParent.right = successor.right
+	} else {
+		successorParent.left = successor.right
+	}
+
 }
 
 func (m *OrderedMap[K, V]) Contains(key K) bool {
-	return m.head.contains(key)
+	current := m.head
+
+	for current != nil {
+		if key == current.key {
+			return true
+		}
+
+		if key < current.key {
+			current = current.left
+
+			continue
+		}
+
+		current = current.right
+	}
+
+	return false
 }
 
 func (m *OrderedMap[K, V]) Size() int {
-	return m.head.countElements()
+	return m.len
 }
 
 func (m *OrderedMap[K, V]) ForEach(action func(K, V)) {
-	m.head.forEach(action)
+	stack := make([]*node[K, V], 0, m.len)
+	current := m.head
+
+	for current != nil || len(stack) > 0 {
+		for current != nil {
+			stack = append(stack, current)
+			current = current.left
+		}
+
+		current = stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		action(current.key, current.value)
+
+		current = current.right
+	}
 }
 
 type node[K cmp.Ordered, V any] struct {
@@ -52,128 +167,6 @@ type node[K cmp.Ordered, V any] struct {
 	value V
 	left  *node[K, V]
 	right *node[K, V]
-}
-
-func (n *node[K, V]) insert(key K, value V) {
-	if n.key == key {
-		n.value = value
-
-		return
-	}
-
-	if key < n.key {
-		if n.left == nil {
-			n.left = &node[K, V]{
-				key:   key,
-				value: value,
-			}
-
-			return
-		}
-
-		n.left.insert(key, value)
-
-		return
-	}
-
-	if n.right == nil {
-		n.right = &node[K, V]{
-			key:   key,
-			value: value,
-		}
-
-		return
-	}
-
-	n.right.insert(key, value)
-}
-
-func (n *node[K, V]) countElements() int {
-	if n == nil {
-		return 0
-	}
-
-	return n.left.countElements() + n.right.countElements() + 1
-}
-
-func (n *node[K, V]) contains(key K) bool {
-	if n == nil {
-		return false
-	}
-
-	if n.key == key {
-		return true
-	}
-
-	if key < n.key {
-		return n.left.contains(key)
-	}
-
-	return n.right.contains(key)
-}
-
-func (n *node[K, V]) forEach(action func(K, V)) {
-	if n == nil {
-		return
-	}
-
-	n.left.forEach(action)
-	action(n.key, n.value)
-	n.right.forEach(action)
-}
-
-func remove[K cmp.Ordered, V any](node *node[K, V], key K) *node[K, V] {
-	if node == nil {
-		return nil
-	}
-
-	if key < node.key {
-		node.left = remove(node.left, key)
-
-		return node
-	}
-
-	if key > node.key {
-		node.right = remove(node.right, key)
-
-		return node
-	}
-
-	// key == node.key
-	if node.left == nil && node.right == nil {
-		node = nil
-
-		return nil
-	}
-
-	if node.left == nil {
-		node = node.right
-
-		return node
-	}
-
-	if node.right == nil {
-		node = node.left
-
-		return node
-	}
-	leftmostrightside := node.right
-
-	for {
-		//find smallest value on the right side
-		if leftmostrightside != nil && leftmostrightside.left != nil {
-			leftmostrightside = leftmostrightside.left
-
-			continue
-		}
-
-		break
-	}
-
-	node.key, node.value = leftmostrightside.key, leftmostrightside.value
-	node.right = remove(node.right, node.key)
-
-	return node
 }
 
 func TestOrderedMap(t *testing.T) {
