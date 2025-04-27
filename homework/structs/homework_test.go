@@ -41,7 +41,7 @@ func WithMana(mana int) func(*GamePerson) {
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
 		person.healthPart = byte(health)
-		person.houseGunFamTypeHealthPart |= byte(health >> 8 << 7)
+		person.houseGunFamTypeHealthPart |= byte(health >> 8 << 6)
 	}
 }
 
@@ -71,19 +71,19 @@ func WithLevel(level int) func(*GamePerson) {
 
 func WithHouse() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 6
+		person.houseGunFamTypeHealthPart |= 1 << 5
 	}
 }
 
 func WithGun() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 5
+		person.houseGunFamTypeHealthPart |= 1 << 4
 	}
 }
 
 func WithFamily() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 4
+		person.houseGunFamTypeHealthPart |= 1 << 3
 	}
 }
 
@@ -111,8 +111,8 @@ type GamePerson struct {
 	respectStr byte
 	// 1-4 bits - experience, 5-8 bits - level
 	explvl byte
-	// 1-3 bits - type, 4 bit - has house, 5 bit - has gun, 6 bit - has family
-	// 7-8 bits - health part
+	// 1-2 bits - type, 3 bit - has house, 4 bit - has gun, 5 bit - has family
+	// 6-7 bits - health part
 	houseGunFamTypeHealthPart byte
 	healthPart                byte
 }
@@ -185,15 +185,15 @@ func (p *GamePerson) Level() int {
 }
 
 func (p *GamePerson) HasHouse() bool {
-	return p.houseGunFamTypeHealthPart>>6&1 == 1
-}
-
-func (p *GamePerson) HasGun() bool {
 	return p.houseGunFamTypeHealthPart>>5&1 == 1
 }
 
-func (p *GamePerson) HasFamily() bool {
+func (p *GamePerson) HasGun() bool {
 	return p.houseGunFamTypeHealthPart>>4&1 == 1
+}
+
+func (p *GamePerson) HasFamily() bool {
+	return p.houseGunFamTypeHealthPart>>3&1 == 1
 }
 
 func (p *GamePerson) Type() int {
