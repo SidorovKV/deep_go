@@ -41,7 +41,7 @@ func WithMana(mana int) func(*GamePerson) {
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
 		person.healthPart = byte(health)
-		person.houseGunFamTypeHealthPart |= byte(health >> 8 << 6)
+		person.houseGunFamTypeHealthPart |= byte(health >> 8 << 5)
 	}
 }
 
@@ -71,25 +71,25 @@ func WithLevel(level int) func(*GamePerson) {
 
 func WithHouse() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 5
+		person.houseGunFamTypeHealthPart |= 1 << 4
 	}
 }
 
 func WithGun() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 4
+		person.houseGunFamTypeHealthPart |= 1 << 3
 	}
 }
 
 func WithFamily() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << 3
+		person.houseGunFamTypeHealthPart |= 1 << 2
 	}
 }
 
 func WithType(personType int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.houseGunFamTypeHealthPart |= 1 << personType
+		person.houseGunFamTypeHealthPart |= byte(personType)
 	}
 }
 
@@ -111,8 +111,8 @@ type GamePerson struct {
 	respectStr byte
 	// 1-4 bits - experience, 5-8 bits - level
 	explvl byte
-	// 1-3 bits - type, 4 bit - has house, 5 bit - has gun, 6 bit - has family
-	// 7-8 bits - health part
+	// 1-2 bits - type, 3 bit - has house, 4 bit - has gun, 5 bit - has family
+	// 6-7 bits - health part, 8 - unused
 	houseGunFamTypeHealthPart byte
 	healthPart                byte
 }
@@ -163,7 +163,7 @@ func (p *GamePerson) Mana() int {
 
 func (p *GamePerson) Health() int {
 	health := int(p.healthPart)
-	health += int(p.houseGunFamTypeHealthPart>>6) << 8
+	health += int(p.houseGunFamTypeHealthPart>>5) << 8
 
 	return health
 }
@@ -185,25 +185,24 @@ func (p *GamePerson) Level() int {
 }
 
 func (p *GamePerson) HasHouse() bool {
-	return p.houseGunFamTypeHealthPart>>5&1 == 1
-}
-
-func (p *GamePerson) HasGun() bool {
 	return p.houseGunFamTypeHealthPart>>4&1 == 1
 }
 
-func (p *GamePerson) HasFamily() bool {
+func (p *GamePerson) HasGun() bool {
 	return p.houseGunFamTypeHealthPart>>3&1 == 1
 }
 
-func (p *GamePerson) Type() int {
-	val := p.houseGunFamTypeHealthPart
-	for i := BuilderGamePersonType; i <= WarriorGamePersonType; i++ {
-		if val&1 == 1 {
-			return i
-		}
+func (p *GamePerson) HasFamily() bool {
+	return p.houseGunFamTypeHealthPart>>2&1 == 1
+}
 
-		val >>= 1
+func (p *GamePerson) Type() int {
+	val := p.houseGunFamTypeHealthPart << 6 >> 6
+
+	for i := byte(BuilderGamePersonType); i <= WarriorGamePersonType; i++ {
+		if val == i {
+			return int(i)
+		}
 	}
 
 	return 0
