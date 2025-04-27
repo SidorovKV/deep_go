@@ -111,7 +111,7 @@ type GamePerson struct {
 	respectStr byte
 	// 1-4 bits - experience, 5-8 bits - level
 	explvl byte
-	// 1-2 bits - type, 3 bit - has house, 4 bit - has gun, 5 bit - has family
+	// 1-2 bits - type, 3 bit - has family, 4 bit - has gun, 5 bit - has house
 	// 6-7 bits - health part, 8 - unused
 	houseGunFamTypeHealthPart byte
 	healthPart                byte
