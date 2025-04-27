@@ -197,15 +197,7 @@ func (p *GamePerson) HasFamily() bool {
 }
 
 func (p *GamePerson) Type() int {
-	val := p.houseGunFamTypeHealthPart << 6 >> 6
-
-	for i := byte(BuilderGamePersonType); i <= WarriorGamePersonType; i++ {
-		if val == i {
-			return int(i)
-		}
-	}
-
-	return 0
+	return int(p.houseGunFamTypeHealthPart << 6 >> 6)
 }
 
 func TestGamePerson(t *testing.T) {
