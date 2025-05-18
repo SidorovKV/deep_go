@@ -28,7 +28,7 @@ func Serialize[T any](object T) string {
 		parts := strings.Split(fieldName, ",")
 		value := reflect.ValueOf(object).Field(i)
 
-		if value.IsZero() && slices.Contains(parts, "omitempty") {
+		if fieldName == "" || value.IsZero() && slices.Contains(parts, "omitempty") {
 			continue
 		}
 
