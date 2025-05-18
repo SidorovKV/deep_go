@@ -12,13 +12,14 @@ import (
 
 func Defragment(memory []byte, pointers []unsafe.Pointer) {
 	for i := 0; i < len(pointers); i++ {
+		if unsafe.Pointer(&memory[i]) == pointers[i] {
+			continue
+		}
+
 		p := pointers[i]
 		memory[i] = *(*byte)(p)
+		*(*byte)(p) = 0
 		pointers[i] = unsafe.Pointer(&memory[i])
-	}
-
-	for i := len(pointers); i < len(memory); i++ {
-		memory[i] = 0
 	}
 }
 
