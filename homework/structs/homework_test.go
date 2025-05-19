@@ -12,79 +12,84 @@ type Option func(*GamePerson)
 
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		for i, char := range unsafe.Slice(unsafe.StringData(name), len(name)) {
+			person.name[i] = char
+		}
 	}
 }
 
 func WithCoordinates(x, y, z int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.x = int32(x)
+		person.y = int32(y)
+		person.z = int32(z)
 	}
 }
 
 func WithGold(gold int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.gold = int32(gold)
 	}
 }
 
 func WithMana(mana int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.mana = int16(mana)
 	}
 }
 
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.healthPart = byte(health)
+		person.houseGunFamTypeHealthPart |= byte(health >> 8 << 5)
 	}
 }
 
 func WithRespect(respect int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.respectStr |= byte(respect)
 	}
 }
 
 func WithStrength(strength int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.respectStr |= byte(strength) << 4
 	}
 }
 
 func WithExperience(experience int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.explvl |= byte(experience)
 	}
 }
 
 func WithLevel(level int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.explvl |= byte(level) << 4
 	}
 }
 
 func WithHouse() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.houseGunFamTypeHealthPart |= 1 << 4
 	}
 }
 
 func WithGun() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.houseGunFamTypeHealthPart |= 1 << 3
 	}
 }
 
 func WithFamily() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.houseGunFamTypeHealthPart |= 1 << 2
 	}
 }
 
 func WithType(personType int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.houseGunFamTypeHealthPart |= byte(personType)
 	}
 }
 
@@ -95,87 +100,104 @@ const (
 )
 
 type GamePerson struct {
-	// need to implement
+	x    int32
+	y    int32
+	z    int32
+	gold int32
+	// still 6 unused bits in mana
+	mana int16
+	name [42]byte
+	// 1-4 bits - respect, 5-8 bits - strength
+	respectStr byte
+	// 1-4 bits - experience, 5-8 bits - level
+	explvl byte
+	// 1-2 bits - type, 3 bit - has family, 4 bit - has gun, 5 bit - has house
+	// 6-7 bits - health part, 8 - unused
+	houseGunFamTypeHealthPart byte
+	healthPart                byte
 }
 
 func NewGamePerson(options ...Option) GamePerson {
-	// need to implement
-	return GamePerson{}
+	p := &GamePerson{}
+
+	for _, option := range options {
+		option(p)
+	}
+
+	return *p
 }
 
 func (p *GamePerson) Name() string {
-	// need to implement
-	return ""
+	chars := p.name[:]
+
+	for i := 0; i < 42; i++ {
+		if p.name[i] == 0 {
+			chars = p.name[:i]
+
+			break
+		}
+	}
+
+	return unsafe.String(unsafe.SliceData(chars), len(chars))
 }
 
 func (p *GamePerson) X() int {
-	// need to implement
-	return 0
+	return int(p.x)
 }
 
 func (p *GamePerson) Y() int {
-	// need to implement
-	return 0
+	return int(p.y)
 }
 
 func (p *GamePerson) Z() int {
-	// need to implement
-	return 0
+	return int(p.z)
 }
 
 func (p *GamePerson) Gold() int {
-	// need to implement
-	return 0
+	return int(p.gold)
 }
 
 func (p *GamePerson) Mana() int {
-	// need to implement
-	return 0
+	return int(p.mana)
 }
 
 func (p *GamePerson) Health() int {
-	// need to implement
-	return 0
+	health := int(p.healthPart)
+	health += int(p.houseGunFamTypeHealthPart>>5) << 8
+
+	return health
 }
 
 func (p *GamePerson) Respect() int {
-	// need to implement
-	return 0
+	return int(p.respectStr << 4 >> 4)
 }
 
 func (p *GamePerson) Strength() int {
-	// need to implement
-	return 0
+	return int(p.respectStr >> 4)
 }
 
 func (p *GamePerson) Experience() int {
-	// need to implement
-	return 0
+	return int(p.explvl << 4 >> 4)
 }
 
 func (p *GamePerson) Level() int {
-	// need to implement
-	return 0
+	return int(p.explvl >> 4)
 }
 
 func (p *GamePerson) HasHouse() bool {
-	// need to implement
-	return false
+	return p.houseGunFamTypeHealthPart>>4&1 == 1
 }
 
 func (p *GamePerson) HasGun() bool {
-	// need to implement
-	return false
+	return p.houseGunFamTypeHealthPart>>3&1 == 1
 }
 
-func (p *GamePerson) HasFamilty() bool {
-	// need to implement
-	return false
+func (p *GamePerson) HasFamily() bool {
+	return p.houseGunFamTypeHealthPart>>2&1 == 1
 }
 
 func (p *GamePerson) Type() int {
-	// need to implement
-	return 0
+	return int(p.houseGunFamTypeHealthPart << 6 >> 6)
 }
 
 func TestGamePerson(t *testing.T) {
@@ -220,7 +242,7 @@ func TestGamePerson(t *testing.T) {
 	assert.Equal(t, experience, person.Experience())
 	assert.Equal(t, level, person.Level())
 	assert.True(t, person.HasHouse())
-	assert.True(t, person.HasFamilty())
+	assert.True(t, person.HasFamily())
 	assert.False(t, person.HasGun())
 	assert.Equal(t, personType, person.Type())
 }
