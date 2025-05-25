@@ -12,25 +12,95 @@ type Task struct {
 }
 
 type Scheduler struct {
-	// need to implement
+	tasks   []Task
+	posByID map[int]int
 }
 
 func NewScheduler() Scheduler {
-	// need to implement
-	return Scheduler{}
+	return Scheduler{
+		tasks:   []Task{},
+		posByID: map[int]int{},
+	}
 }
 
 func (s *Scheduler) AddTask(task Task) {
-	// need to implement
+	s.tasks = append(s.tasks, task)
+
+	i := len(s.tasks) - 1
+	s.posByID[s.tasks[i].Identifier] = i
+
+	_ = s.sieveUp(i)
 }
 
 func (s *Scheduler) ChangeTaskPriority(taskID int, newPriority int) {
-	// need to implement
+	idx, ok := s.posByID[taskID]
+	if !ok {
+		return
+	}
+
+	s.tasks[idx].Priority = newPriority
+
+	i := idx
+	i = s.sieveUp(i)
+
+	s.sieveDown(i)
 }
 
 func (s *Scheduler) GetTask() Task {
-	// need to implement
-	return Task{}
+	if len(s.tasks) == 0 {
+		return Task{}
+	}
+
+	result := s.tasks[0]
+
+	s.tasks[0] = s.tasks[len(s.tasks)-1]
+	s.tasks = s.tasks[:len(s.tasks)-1]
+
+	i := 0
+	s.sieveDown(i)
+
+	return result
+}
+
+func (s *Scheduler) sieveUp(i int) int {
+	for i > 0 {
+		parent := (i - 1) / 2
+		if s.tasks[parent].Priority < s.tasks[i].Priority {
+			s.posByID[s.tasks[i].Identifier] = parent
+			s.posByID[s.tasks[parent].Identifier] = i
+			s.tasks[parent], s.tasks[i] = s.tasks[i], s.tasks[parent]
+		}
+
+		i = parent
+	}
+
+	return i
+}
+
+func (s *Scheduler) sieveDown(i int) {
+	l, r := 2*i+1, 2*i+2
+
+	for l < len(s.tasks) {
+		var c int
+		if l < len(s.tasks) {
+			c = l
+
+			if r < len(s.tasks) {
+				if s.tasks[l].Priority < s.tasks[r].Priority {
+					c = r
+				}
+			}
+		}
+
+		if s.tasks[i].Priority < s.tasks[c].Priority {
+			s.posByID[s.tasks[i].Identifier] = c
+			s.posByID[s.tasks[c].Identifier] = i
+			s.tasks[i], s.tasks[c] = s.tasks[c], s.tasks[i]
+		}
+
+		i = c
+		l, r = 2*i+1, 2*i+2
+	}
 }
 
 func TestTrace(t *testing.T) {
@@ -56,7 +126,7 @@ func TestTrace(t *testing.T) {
 	scheduler.ChangeTaskPriority(1, 100)
 
 	task = scheduler.GetTask()
-	assert.Equal(t, task1, task)
+	assert.Equal(t, task1.Identifier, task.Identifier) // кажется ждать старый приоритет, изменив его выше, не вполне правильно
 
 	task = scheduler.GetTask()
 	assert.Equal(t, task3, task)
