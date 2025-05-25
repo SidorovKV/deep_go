@@ -47,6 +47,10 @@ func (s *Scheduler) ChangeTaskPriority(taskID int, newPriority int) {
 }
 
 func (s *Scheduler) GetTask() Task {
+	if len(s.tasks) == 0 {
+		return Task{}
+	}
+
 	result := s.tasks[0]
 
 	s.tasks[0] = s.tasks[len(s.tasks)-1]
